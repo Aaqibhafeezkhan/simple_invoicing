@@ -30,6 +30,7 @@ from src.schemas.product import (
     ProductWithInventoryUpdate,
 )
 from src.api.deps import get_active_company, get_current_user, require_company_role
+from src.api.pagination import MAX_PAGE
 from src.core.analytics import distinct_id_for, track
 from src.core.document_limits import MONEY_STORAGE_CUTOFF, QUANTITY_STORAGE_CUTOFF
 from src.core.validation import hsn_sac_warning, normalize_hsn_sac
@@ -159,7 +160,7 @@ def create_product(
 @router.get("", response_model=PaginatedProductOut, include_in_schema=False)
 @router.get("/", response_model=PaginatedProductOut)
 def list_products(
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, le=MAX_PAGE),
     page_size: int = Query(20, ge=1, le=500),
     search: str = Query(""),
     is_producable: bool | None = Query(None),
@@ -511,7 +512,7 @@ def _apply_catalogue_filters(
 
 @router.get("/with-inventory", response_model=dict)
 def list_products_with_inventory(
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, le=MAX_PAGE),
     page_size: int = Query(50, ge=1, le=500),
     search: str = Query(""),
     status_filter: str = Query("", alias="status"),
