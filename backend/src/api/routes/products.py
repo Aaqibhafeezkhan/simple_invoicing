@@ -890,7 +890,25 @@ def _import_csv_from_content(content: bytes, db: Session, active_company: Compan
     row_num = 1  # header is row 0
     for row in reader:
         row_num += 1
-        values = dict(zip(normalised, [v.strip() if v else "" for v in row.values()]))
+        # csv.DictReader puts any cells beyond the header in a list under the
+        # key None. Building `values` from row.values() used to call .strip()
+        # on that list and raise AttributeError, failing the whole import
+        # with a 500. Report such a row instead and keep importing the rest:
+        # an unquoted comma shifts later values into the wrong column, so
+        # the row cannot be saved safely. This applies even when the extra
+        # cells are blank: a trailing comma can mean the last column was
+        # really empty, e.g. a missing Selling Price.
+        if None in row:
+            errors.append(
+                {
+                    "row": row_num,
+                    "message": "This row has more cells than the header row. Check for an unquoted comma, for example in Description.",
+                }
+            )
+            continue
+        values = dict(
+            zip(normalised, [v.strip() if isinstance(v, str) else "" for v in row.values()])
+        )
 
         item_code = values.get("item_code") or values.get("sku") or values.get("item_code")
         item_name = values.get("item_name") or values.get("name")
