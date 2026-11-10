@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { ACTION_KEYS, ACTION_LABELS, DEFAULT_SHORTCUTS, type ActionKey } from '../utils/shortcutDefaults';
 import ShortcutCheatSheet from './ShortcutCheatSheet';
 
@@ -29,7 +29,15 @@ function keyFor(html: string, label: string) {
   return html.match(new RegExp(`<dt>${escaped}</dt><dd><kbd>([^<]*)</kbd></dd>`))?.[1];
 }
 
+function onPlatform(platform: string) {
+  vi.stubGlobal('navigator', { ...globalThis.navigator, platform, userAgent: '', userAgentData: undefined });
+}
+
 describe('ShortcutCheatSheet', () => {
+  // Node reports the host's platform, so pin it: the keys read differently on a Mac.
+  beforeEach(() => onPlatform('Win32'));
+  afterEach(() => vi.unstubAllGlobals());
+
   test('is a modal dialog named by its heading', () => {
     const html = render();
 
@@ -54,6 +62,15 @@ describe('ShortcutCheatSheet', () => {
     expect(keyFor(html, 'Save Invoice')).toBe('Alt+Enter');
     expect(keyFor(html, 'New Invoice')).toBe(DEFAULT_SHORTCUTS.create_invoice);
     expect(html).not.toContain(`<kbd>${DEFAULT_SHORTCUTS.go_invoices}</kbd>`);
+  });
+
+  test('shows Mac symbols on a Mac, where Option and ⌘ stand in for Alt and Ctrl', () => {
+    onPlatform('MacIntel');
+    const html = render();
+
+    expect(keyFor(html, 'Go to Ledgers')).toBe('⌥L');
+    expect(keyFor(html, 'New Customer')).toBe('⇧⌘C');
+    expect(keyFor(html, 'Go to Invoices')).toBe('⇧⌘I');
   });
 
   test('links to the Keyboard Shortcuts page for changing them', () => {

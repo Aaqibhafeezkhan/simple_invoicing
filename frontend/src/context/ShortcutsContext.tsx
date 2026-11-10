@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import api from '../api/client';
 import { useAuth } from './AuthContext';
 import { ACTION_KEYS, DEFAULT_SHORTCUTS, type ActionKey } from '../utils/shortcutDefaults';
-import { isTypingTarget, normalizeCombo } from '../utils/keyboard';
+import { comboMatches, isTypingTarget, normalizeCombo } from '../utils/keyboard';
 
 type ShortcutEntry = {
   action_key: string;
@@ -68,7 +68,7 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
       const { shortcutsMap, handlers } = useShortcutsStore.getState();
       const combo = normalizeCombo(e);
       const action = (Object.keys(shortcutsMap) as ActionKey[]).find(
-        (k) => shortcutsMap[k] === combo,
+        (k) => comboMatches(shortcutsMap[k], combo),
       );
       if (!action) return;
       const handler = handlers.get(action);

@@ -1,15 +1,21 @@
 import { describe, expect, test } from 'vitest';
-import { isCheatSheetKey, isTypingTarget, normalizeCombo } from './keyboard';
+import {
+  canonicalCombo, comboMatches, formatCombo, isCheatSheetKey, isTypingTarget, normalizeCombo,
+} from './keyboard';
 import { DEFAULT_SHORTCUTS } from './shortcutDefaults';
 
 type Target = { tagName: string; isContentEditable?: boolean } | null;
 
 function key(
   value: string,
-  { target = { tagName: 'BODY' } as Target, ctrl = false, shift = false, alt = false, meta = false } = {},
+  {
+    target = { tagName: 'BODY' } as Target, ctrl = false, shift = false, alt = false, meta = false,
+    code = undefined as string | undefined,
+  } = {},
 ) {
   return {
     key: value,
+    code,
     ctrlKey: ctrl,
     shiftKey: shift,
     altKey: alt,
@@ -25,7 +31,7 @@ describe('normalizeCombo', () => {
   test('orders modifiers Ctrl, Shift, Alt, Meta and upper-cases a single character', () => {
     expect(normalizeCombo(key('c', { ctrl: true, shift: true }))).toBe('Ctrl+Shift+C');
     expect(normalizeCombo(key('i', { alt: true }))).toBe('Alt+I');
-    expect(normalizeCombo(key('k', { meta: true, alt: true, shift: true, ctrl: true }))).toBe('Ctrl+Shift+Alt+Meta+K');
+    expect(normalizeCombo(key('k', { meta: true, alt: true, shift: true, ctrl: true }), false)).toBe('Ctrl+Shift+Alt+Meta+K');
   });
 
   test('keeps named keys as they are', () => {
@@ -35,6 +41,73 @@ describe('normalizeCombo', () => {
 
   test('reports ? as Shift+?, the way the browser delivers it', () => {
     expect(normalizeCombo(key('?', { shift: true }))).toBe('Shift+?');
+  });
+
+  // What Chrome, Safari and Firefox on macOS (US layout) put in `key` while Option is held.
+  test.each([
+    ['¬', 'KeyL', 'Alt+L'],
+    ['π', 'KeyP', 'Alt+P'],
+    ['∂', 'KeyD', 'Alt+D'],
+    ['ß', 'KeyS', 'Alt+S'],
+    ['Dead', 'KeyI', 'Alt+I'],
+    ['Dead', 'KeyN', 'Alt+N'],
+    ['¡', 'Digit1', 'Alt+1'],
+  ])('reads Option+%s on a Mac as the physical key', (produced, code, combo) => {
+    expect(normalizeCombo(key(produced, { alt: true, code }), true)).toBe(combo);
+  });
+
+  test('Option+Shift on a Mac keeps both modifiers', () => {
+    expect(normalizeCombo(key('Ç', { alt: true, shift: true, code: 'KeyC' }), true)).toBe('Shift+Alt+C');
+  });
+
+  test('a layout with no Latin letters still names the physical key', () => {
+    expect(normalizeCombo(key('и', { ctrl: true, code: 'KeyB' }), false)).toBe('Ctrl+B');
+  });
+
+  test('a Latin layout that moves letters keeps the letter its user pressed', () => {
+    // AZERTY: the key labelled A sits where QWERTY has Q.
+    expect(normalizeCombo(key('a', { ctrl: true, code: 'KeyQ' }), false)).toBe('Ctrl+A');
+  });
+
+  test('records ⌘ as Ctrl on a Mac, so one saved shortcut works on both platforms', () => {
+    expect(normalizeCombo(key('s', { meta: true, code: 'KeyS' }), true)).toBe('Ctrl+S');
+    expect(normalizeCombo(key('c', { meta: true, shift: true, code: 'KeyC' }), true)).toBe('Ctrl+Shift+C');
+    expect(normalizeCombo(key('s', { ctrl: true, code: 'KeyS' }), true)).toBe('Ctrl+S');
+  });
+
+  test('keeps the Windows key as Meta off a Mac', () => {
+    expect(normalizeCombo(key('s', { meta: true }), false)).toBe('Meta+S');
+  });
+});
+
+describe('canonicalCombo and comboMatches', () => {
+  test('a Mac still matches ⌘ shortcuts saved as Meta before ⌘ meant Ctrl', () => {
+    expect(canonicalCombo('Meta+K', true)).toBe('Ctrl+K');
+    expect(canonicalCombo('Shift+Meta+K', true)).toBe('Ctrl+Shift+K');
+    expect(comboMatches('Meta+K', 'Ctrl+K', true)).toBe(true);
+  });
+
+  test('leaves combos alone off a Mac, and combos without Meta on one', () => {
+    expect(canonicalCombo('Meta+K', false)).toBe('Meta+K');
+    expect(canonicalCombo('Alt+L', true)).toBe('Alt+L');
+    expect(comboMatches('Meta+K', 'Ctrl+K', false)).toBe(false);
+  });
+
+  test('a + key is not mistaken for a separator', () => {
+    expect(canonicalCombo('Meta++', true)).toBe('Ctrl++');
+  });
+});
+
+describe('formatCombo', () => {
+  test('shows Mac symbols in Apple order', () => {
+    expect(formatCombo('Alt+L', true)).toBe('⌥L');
+    expect(formatCombo('Ctrl+S', true)).toBe('⌘S');
+    expect(formatCombo('Ctrl+Shift+C', true)).toBe('⇧⌘C');
+    expect(formatCombo('Meta+K', true)).toBe('⌘K');
+  });
+
+  test('is unchanged off a Mac', () => {
+    expect(formatCombo('Ctrl+Shift+C', false)).toBe('Ctrl+Shift+C');
   });
 });
 

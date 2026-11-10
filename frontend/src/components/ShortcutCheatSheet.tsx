@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useShortcuts } from '../context/ShortcutsContext';
 import { useEscapeClose } from '../hooks/useEscapeClose';
+import { formatCombo } from '../utils/keyboard';
 import { ACTION_KEYS, ACTION_LABELS } from '../utils/shortcutDefaults';
 import ModalCloseButton from './ModalCloseButton';
 
@@ -48,7 +49,7 @@ export default function ShortcutCheatSheet({ onClose }: ShortcutCheatSheetProps)
           {ACTION_KEYS.map((key) => (
             <div key={key} className="shortcut-cheat-sheet__row">
               <dt>{ACTION_LABELS[key]}</dt>
-              <dd><kbd>{shortcutFor(key)}</kbd></dd>
+              <dd><kbd>{formatCombo(shortcutFor(key))}</kbd></dd>
             </div>
           ))}
         </dl>

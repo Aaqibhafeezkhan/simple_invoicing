@@ -4,11 +4,11 @@ import { useShortcuts } from '../context/ShortcutsContext';
 import { ACTION_KEYS, ACTION_LABELS, DEFAULT_SHORTCUTS, type ActionKey } from '../utils/shortcutDefaults';
 import StatusToasts from '../components/StatusToasts';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { normalizeCombo } from '../utils/keyboard';
+import { canonicalCombo, formatCombo, normalizeCombo } from '../utils/keyboard';
 
 // Keys that should be ignored when recording (lone modifiers / lock keys)
 const MODIFIER_KEYS = new Set([
-  'Control', 'Shift', 'Alt', 'Meta',
+  'Control', 'Shift', 'Alt', 'AltGraph', 'Meta', 'OS',
   'CapsLock', 'NumLock', 'ScrollLock', 'Tab',
 ]);
 
@@ -59,7 +59,8 @@ export default function KeyboardShortcutsPage() {
     for (const key of ACTION_KEYS) {
       if (key === actionKey) continue;
       const current = pending[key] ?? shortcutsMap[key];
-      if (current === combo) return key;
+      // A Mac user's older ⌘ bindings were saved as Meta; they still clash with the same keys saved as Ctrl.
+      if (canonicalCombo(current) === canonicalCombo(combo)) return key;
     }
     return null;
   }
@@ -179,7 +180,7 @@ export default function KeyboardShortcutsPage() {
                   <tr key={key}>
                     <td>{ACTION_LABELS[key]}</td>
                     <td>
-                      <kbd>{DEFAULT_SHORTCUTS[key]}</kbd>
+                      <kbd>{formatCombo(DEFAULT_SHORTCUTS[key])}</kbd>
                     </td>
                     <td>
                       <button
@@ -206,10 +207,10 @@ export default function KeyboardShortcutsPage() {
                         aria-label={
                           isRecording
                             ? 'Recording shortcut — press a key combination'
-                            : `Current shortcut: ${displayValue}`
+                            : `Current shortcut: ${formatCombo(displayValue)}`
                         }
                       >
-                        {isRecording ? 'Press keys…' : displayValue}
+                        {isRecording ? 'Press keys…' : formatCombo(displayValue)}
                       </button>
                       {conflict !== null && (
                         <p
