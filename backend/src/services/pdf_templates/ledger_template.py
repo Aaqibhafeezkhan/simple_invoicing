@@ -1,6 +1,7 @@
 """Ledger-related PDF HTML template generation."""
 
 from datetime import date, datetime
+from decimal import Decimal, ROUND_HALF_UP
 from html import escape
 
 from src.models.buyer import Buyer as Ledger
@@ -16,10 +17,13 @@ def _fmt_inr(value: float, currency: str = "INR") -> str:
     try:
         if currency == "INR":
             # Indian grouping: 1,23,456.78
-            neg = value < 0
-            value = abs(value)
-            integer_part = int(value)
-            decimal_part = f"{value - integer_part:.2f}"[1:]  # ".xx"
+            # Round to 2 decimal places first so float precision cannot drop a rupee.
+            # (e.g. 6490.999999999999 must become ₹6,491.00, not ₹6,490.00)
+            d = Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            neg = d < 0
+            d = abs(d)
+            integer_part = int(d)
+            decimal_part = f"{d - Decimal(integer_part):.2f}"[1:]  # ".xx"
             s = str(integer_part)
             if len(s) > 3:
                 last3 = s[-3:]
