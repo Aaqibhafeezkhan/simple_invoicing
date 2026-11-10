@@ -407,3 +407,5 @@ Inspired by [Tally](https://tallysolutions.com/) accounting software. Built with
 Special thanks to [Nash Aschenbath](https://github.com/Aschenbath) for the live GSTR-1 number limits in the invoice series form (#545).
 
 Special thanks to [Aaqibhafeez Khan](https://github.com/Aaqibhafeezkhan) for the TDS and TCS foundation: the effective-dated section and rate table for the Income-tax Acts of 1961 and 2025, and PAN and TAN on parties and the company (#771).
+
+Special thanks to [Nash Aschenbath](https://github.com/Aschenbath) for the first TDS on receipts and TCS on sales invoices (#779, #780). The invoice row locks, the Postgres tests, CSV formula escaping, keeping the buyer's PAN on the invoice and the ₹10 lakh motor vehicle hint all came from that work into the final versions (#768, #769).
