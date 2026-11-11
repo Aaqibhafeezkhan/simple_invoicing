@@ -47,10 +47,11 @@ export function computeLineTotal({
     }
   }
   if (!interstateSupply) {
-    // assign_item_tax_split rounds CGST and SGST separately at half the rate,
-    // then replaces the preliminary tax and line total, even for inclusive prices.
+    // Match the backend: round both GST halves independently.
+    // Inclusive prices retain their gross total; the taxable base adjusts.
     taxAmount = roundMoney(2 * roundMoney(taxableAmount * (gstRate / 2) / 100));
-    lineTotal = roundMoney(taxableAmount + taxAmount);
+    if (taxInclusive) taxableAmount = roundMoney(lineTotal - taxAmount);
+    else lineTotal = roundMoney(taxableAmount + taxAmount);
   }
   return { taxableAmount, taxAmount, lineTotal };
 }

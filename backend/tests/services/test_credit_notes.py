@@ -491,13 +491,13 @@ class TestCreateCreditNoteValidation:
 
         assert added_credit_note_item is not None
         assert added_credit_note is not None
-        assert Decimal(str(added_credit_note_item.taxable_amount)) == Decimal("100.04")
+        assert Decimal(str(added_credit_note_item.taxable_amount)) == Decimal("100.03")
         assert Decimal(str(added_credit_note_item.tax_amount)) == Decimal("18.02")
-        assert Decimal(str(added_credit_note_item.line_total)) == Decimal("118.06")
+        assert Decimal(str(added_credit_note_item.line_total)) == Decimal("118.05")
         assert Decimal(str(added_credit_note.cgst_amount)) == Decimal("9.01")
         assert Decimal(str(added_credit_note.sgst_amount)) == Decimal("9.01")
         assert Decimal(str(added_credit_note.cgst_amount + added_credit_note.sgst_amount)) == Decimal("18.02")
-        assert Decimal(str(added_credit_note.total_amount)) == Decimal("118.06")
+        assert Decimal(str(added_credit_note.total_amount)) == Decimal("118.05")
         mock_change_inventory.assert_not_called()
 
 

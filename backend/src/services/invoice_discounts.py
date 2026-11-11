@@ -5,12 +5,12 @@ computes them at write time and persists only ``discount_type`` and
 ``discount_value``, with ``taxable_amount`` already net of any line discount.
 Reports that need a "Discount Given" figure therefore have to recover it.
 
-This module recovers it by *inverting* the write path's algebra rather than
-re-running its arithmetic.  That matters: re-running would have to reproduce
-both of the processor's clamps (``min(discount, taxable)`` on net line
-discounts, ``min(discount, raw_total)`` on invoice discounts) and would
-accumulate its own rounding.  Subtracting stored values gets both for free and
-is exact.
+Normally this module recovers discounts by *inverting* the write path's
+algebra instead of replaying the calculation. For inclusive item discounts,
+however, intrastate GST splitting can move the stored taxable base by a paisa.
+Those item discounts are reconstructed from their stored discount parameters
+and the original pre-discount base; invoice-level discounts remain inverted
+from the final document totals.
 
 The derivation is coupled to ``InvoiceProcessor.calculate_totals`` and
 ``InvoiceProcessor._apply_totals``.  If the discount write path changes, the
@@ -71,7 +71,23 @@ def _pre_discount_taxable(item: InvoiceItem, *, tax_inclusive: bool) -> Decimal:
 
 def item_discount_amount(item: InvoiceItem, *, tax_inclusive: bool) -> Decimal:
     """Recover one line's discount amount from its stored taxable amount."""
-    discount = _pre_discount_taxable(item, tax_inclusive=tax_inclusive) - _dec(item.taxable_amount)
+    pre_discount_taxable = _pre_discount_taxable(item, tax_inclusive=tax_inclusive)
+    if tax_inclusive and item.discount_type in ("net", "percentage"):
+        # An inclusive intrastate line can have its taxable base shifted by
+        # one paisa to preserve the entered gross price with equal GST halves.
+        # Inverting that stored base would misreport the actual line discount.
+        # Recover the amount from the original pre-discount taxable base and
+        # the persisted discount parameters instead.
+        value = _dec(item.discount_value)
+        if value <= 0:
+            return Decimal("0.00")
+        if item.discount_type == "percentage":
+            discount = _money(pre_discount_taxable * value / Decimal("100"))
+        else:
+            discount = _money(value)
+        return min(discount, pre_discount_taxable)
+
+    discount = pre_discount_taxable - _dec(item.taxable_amount)
     # A stored taxable above the reconstruction would mean the write path
     # changed shape; clamp rather than report a negative discount.
     if discount <= 0:

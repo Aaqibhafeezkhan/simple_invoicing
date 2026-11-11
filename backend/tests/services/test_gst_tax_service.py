@@ -113,6 +113,19 @@ def test_assign_item_tax_split_intrastate_uses_equal_rounded_halves():
     assert Decimal(str(item.line_total)) == Decimal("118.12")
 
 
+def test_assign_item_tax_split_keeps_intrastate_inclusive_total():
+    item = make_item(taxable_amount="846.61", gst_rate="18", tax_amount="152.39")
+    item.line_total = Decimal("999.00")
+
+    assign_item_tax_split([item], interstate_supply=False, tax_inclusive=True)
+
+    assert Decimal(str(item.cgst_amount)) == Decimal("76.19")
+    assert Decimal(str(item.sgst_amount)) == Decimal("76.19")
+    assert Decimal(str(item.taxable_amount)) == Decimal("846.62")
+    assert Decimal(str(item.tax_amount)) == Decimal("152.38")
+    assert Decimal(str(item.line_total)) == Decimal("999.00")
+
+
 def test_assign_item_tax_split_interstate_uses_full_igst():
     item = make_item(taxable_amount="100.005", tax_amount="18.005")
 

@@ -567,6 +567,29 @@ def test_return_on_a_line_with_only_a_total_still_credits_it(client, gst_seller,
     assert note["total_amount"] == 100
 
 
+def test_intrastate_discount_note_preserves_requested_inclusive_amount(client, gst_seller, db_session):
+    invoice = _sale(
+        client, {"quantity": 1, "unit_price": 999, "gst_rate": 18},
+        tax_inclusive=True,
+    )
+    response = _note(
+        client, invoice, note_type="discount", discount_amount_inclusive="100",
+    )
+
+    assert response.status_code == 201, response.text
+    note = response.json()
+    assert note["total_amount"] == pytest.approx(100.00)
+    assert note["taxable_amount"] == pytest.approx(84.74)
+    assert note["cgst_amount"] == pytest.approx(7.63)
+    assert note["sgst_amount"] == pytest.approx(7.63)
+    assert note["igst_amount"] == pytest.approx(0)
+    assert note["taxable_amount"] + note["cgst_amount"] + note["sgst_amount"] == pytest.approx(100.00)
+    assert note["items"][0]["line_total"] == pytest.approx(100.00)
+    assert note["items"][0]["taxable_amount"] == pytest.approx(84.74)
+    assert note["items"][0]["unit_price"] == pytest.approx(84.74)
+    assert float(_stored(db_session, note).total_amount) == pytest.approx(100.00)
+
+
 def test_discount_note_larger_than_the_line_is_refused_and_creates_nothing(client, gst_seller, db_session):
     invoice = _sale(client, {"quantity": 1, "unit_price": 100, "gst_rate": 18})
 

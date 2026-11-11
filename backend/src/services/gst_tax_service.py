@@ -123,6 +123,7 @@ def assign_item_tax_split(
     items: list[InvoiceItem],
     *,
     interstate_supply: bool,
+    tax_inclusive: bool = False,
 ) -> None:
     """
     Assign tax split (CGST, SGST, IGST) to invoice items based on supply type.
@@ -132,11 +133,12 @@ def assign_item_tax_split(
     
     Modifies the items in-place, updating:
     - cgst_amount, sgst_amount, igst_amount
-    - tax_amount, line_total
+    - taxable_amount (for tax-inclusive intrastate lines), tax_amount, line_total
     
     Args:
         items: List of InvoiceItem objects to assign tax splits to.
         interstate_supply: True if this is an interstate supply, False for intrastate.
+        tax_inclusive: Preserve the entered gross amount when splitting inclusive tax.
     """
     if not items:
         return
@@ -163,8 +165,17 @@ def assign_item_tax_split(
         item_sgst_amount = item_cgst_amount
         item_total_tax_amount = money(item_cgst_amount + item_sgst_amount)
 
+        if tax_inclusive:
+            # Keep the entered inclusive total after independently rounding both
+            # GST halves; the taxable base absorbs any one-paisa difference.
+            line_total = money(Decimal(str(item.line_total or 0)))
+            taxable_amount = money(line_total - item_total_tax_amount)
+            item.taxable_amount = float(taxable_amount)
+        else:
+            line_total = money(taxable_amount + item_total_tax_amount)
+
         item.tax_amount = float(item_total_tax_amount)
-        item.line_total = float(money(taxable_amount + item_total_tax_amount))
+        item.line_total = float(line_total)
         item.cgst_amount = float(item_cgst_amount)
         item.sgst_amount = float(item_sgst_amount)
         item.igst_amount = 0.0

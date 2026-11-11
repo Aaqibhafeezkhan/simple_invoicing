@@ -560,10 +560,8 @@ class InvoiceProcessor:
         line_results = self.calculate_totals(validated, payload.tax_inclusive)
 
         # Create InvoiceItem ORM objects
-        taxable_total = Decimal("0")
         created_items: list[InvoiceItem] = []
         for result in line_results:
-            taxable_total += result["taxable_amount"]
             item_dtype = getattr(result["item_schema"], "discount_type", None)
             item_dval = (
                 float(result["item_schema"].discount_value)
@@ -598,10 +596,17 @@ class InvoiceProcessor:
             created_items.append(invoice_item)
             self.db.add(invoice_item)
 
-        taxable_total = _money(taxable_total)
+        assign_item_tax_split(
+            created_items,
+            interstate_supply=interstate_supply,
+            tax_inclusive=payload.tax_inclusive,
+        )
+        # The taxable base can move by a paisa on inclusive intrastate lines.
+        taxable_total = _money(sum(
+            (Decimal(str(item.taxable_amount or 0)) for item in created_items),
+            Decimal("0"),
+        ))
         invoice.taxable_amount = float(taxable_total)
-
-        assign_item_tax_split(created_items, interstate_supply=interstate_supply)
 
         tax_total = assign_invoice_tax_totals(
             invoice, created_items, interstate_supply=interstate_supply

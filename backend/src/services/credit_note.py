@@ -368,7 +368,7 @@ def create_credit_note(
         gst_rate = Decimal(str(ii.gst_rate or 0))
         if payload.credit_note_type == "discount":
             line_total = _money(Decimal(str(cn_item.discount_amount_inclusive or 0)))
-            # Held to the amount asked for, which the even split below can pass by a paisa.
+            # A discount note must credit exactly this inclusive amount.
             new_credit[ii.id] = new_credit.get(ii.id, Decimal("0")) + line_total
             if gst_rate > 0:
                 taxable = _money(line_total / (Decimal("1") + (gst_rate / Decimal("100"))))
@@ -420,7 +420,13 @@ def create_credit_note(
             sgst = half
             igst = Decimal("0")
             tax = _money(cgst + sgst)
-            line_total = _money(taxable + tax)
+            if payload.credit_note_type == "discount":
+                # Retain the requested gross discount after rounding equal GST
+                # halves, rather than silently adding a paisa to the credit.
+                taxable = _money(line_total - tax)
+                unit_price = taxable
+            else:
+                line_total = _money(taxable + tax)
 
         if payload.credit_note_type != "discount":
             new_credit[ii.id] = new_credit.get(ii.id, Decimal("0")) + line_total

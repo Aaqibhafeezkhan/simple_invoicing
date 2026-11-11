@@ -142,6 +142,49 @@ def test_intrastate_odd_paise_total_tax_is_not_inflated(db_session):
     assert "GST Split" not in html
 
 
+@pytest.mark.parametrize(
+    ("ledger_gst", "expected_taxable", "expected_cgst", "expected_sgst", "expected_igst"),
+    [
+        ("07ABCDE1234F1Z2", 846.62, 76.19, 76.19, 0),
+        ("27ABCDE1234F1Z0", 846.61, 0, 0, 152.39),
+    ],
+)
+def test_tax_inclusive_invoice_preserves_entered_total(
+    db_session, ledger_gst, expected_taxable, expected_cgst, expected_sgst, expected_igst
+):
+    user, ledger = _seed_common(db_session, ledger_gst=ledger_gst)
+    product = _create_product_with_inventory(db_session, "GROSS999", 999.00, 18)
+    invoice = _new_invoice(db_session)
+    payload = InvoiceCreate(
+        ledger_id=ledger.id,
+        voucher_type="sales",
+        tax_inclusive=True,
+        items=[InvoiceItemCreate(product_id=product.id, quantity=1, unit_price=999.00)],
+    )
+
+    InvoiceProcessor(db_session).apply_payload(
+        invoice, payload, created_by=user.id, regenerate_number=False,
+    )
+    db_session.flush()
+    db_session.refresh(invoice)
+
+    item = invoice.items[0]
+    assert float(invoice.total_amount) == pytest.approx(999.00)
+    assert float(item.line_total) == pytest.approx(999.00)
+    assert float(item.taxable_amount) == pytest.approx(expected_taxable)
+    assert float(invoice.taxable_amount) == pytest.approx(expected_taxable)
+    assert float(item.cgst_amount) == pytest.approx(expected_cgst)
+    assert float(item.sgst_amount) == pytest.approx(expected_sgst)
+    assert float(item.igst_amount) == pytest.approx(expected_igst)
+    assert float(item.cgst_amount + item.sgst_amount + item.igst_amount) == pytest.approx(
+        float(item.tax_amount)
+    )
+    assert float(item.taxable_amount + item.tax_amount) == pytest.approx(item.line_total)
+    assert float(invoice.taxable_amount + invoice.total_tax_amount) == pytest.approx(
+        invoice.total_amount
+    )
+
+
 def _unit_price_html(db_session, *, tax_inclusive: bool, unit_price: float) -> str:
     user, ledger = _seed_common(db_session)
     product = _create_product_with_inventory(db_session, "UNIT01", unit_price, 18)

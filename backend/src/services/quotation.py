@@ -259,7 +259,6 @@ def _apply_payload(
     validated = processor.resolve_items(payload.items, company.id, document_label="Quotation")
     _reject_lines_conversion_would_refuse(validated)
 
-    taxable_total = Decimal("0")
     items: list[QuotationItem] = []
     for result in processor.calculate_totals(validated, payload.tax_inclusive):
         require_money_fits(
@@ -268,7 +267,6 @@ def _apply_payload(
             result["tax_amount"],
             result["line_total"],
         )
-        taxable_total += result["taxable_amount"]
         schema = result["item_schema"]
         items.append(
             QuotationItem(
@@ -287,12 +285,17 @@ def _apply_payload(
         )
     quotation.items = items
 
-    taxable_total = _money(taxable_total)
-    quotation.taxable_amount = float(taxable_total)
     # An estimate of the split, from the GSTINs as they stand. Conversion works it
     # out again from whatever they are by then.
     interstate = is_interstate_supply(quotation.company_gst, quotation.ledger_gst)
-    assign_item_tax_split(items, interstate_supply=interstate)
+    assign_item_tax_split(
+        items, interstate_supply=interstate, tax_inclusive=payload.tax_inclusive
+    )
+    taxable_total = _money(sum(
+        (Decimal(str(item.taxable_amount or 0)) for item in items),
+        Decimal("0"),
+    ))
+    quotation.taxable_amount = float(taxable_total)
     tax_total = assign_invoice_tax_totals(quotation, items, interstate_supply=interstate)
     apply_discount_and_round_off(
         quotation,

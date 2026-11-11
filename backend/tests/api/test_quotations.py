@@ -205,6 +205,23 @@ def test_totals_match_an_invoice_with_the_same_lines(setup):
             assert quoted[field] == invoiced[field], field
 
 
+def test_intrastate_inclusive_quotation_and_invoice_stay_at_the_entered_price(setup):
+    client, ledger, product = setup
+    body = quotation_payload(
+        ledger["id"], product["id"], quantity=1, tax_inclusive=True,
+    )
+    body["items"][0]["unit_price"] = 999
+    quote = ok(client.post("/api/quotations/", json=body))
+    invoice = ok(convert(client, quote["id"]))
+
+    for document in (quote, invoice):
+        assert document["total_amount"] == 999
+        assert document["taxable_amount"] == 846.62
+        assert document["cgst_amount"] == document["sgst_amount"] == 76.19
+        assert document["items"][0]["line_total"] == 999
+        assert document["items"][0]["taxable_amount"] == 846.62
+
+
 def test_an_interstate_buyer_is_quoted_igst(setup):
     client, _, product = setup
     other_state = create_ledger(client, "Out of State", gst=GST_KA)
@@ -888,8 +905,8 @@ def test_rate_change_uses_the_current_rate_and_says_which_figure_moves(setup, ta
     assert invoice["items"][0]["gst_rate"] == 5
     assert invoice["items"][0]["unit_price"] == 100
     if tax_inclusive:
-        # The tax split rounds each head, which can move an inclusive total by a paisa.
-        assert invoice["total_amount"] == pytest.approx(quote["total_amount"], abs=0.02)
+        # Changing the rate changes the taxable base, not the inclusive price.
+        assert invoice["total_amount"] == quote["total_amount"]
         assert invoice["taxable_amount"] != quote["taxable_amount"]
     else:
         assert invoice["total_amount"] == 210

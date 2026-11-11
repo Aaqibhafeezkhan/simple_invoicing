@@ -40,7 +40,22 @@ describe('rounded invoice previews', () => {
       .toEqual({ taxableAmount: 0.86, taxAmount: 0.15, lineTotal: 1.01 });
     expect(computeLineTotal({
       unitPrice: 1.01, quantity: 1, gstRate: 18, taxInclusive: true, interstateSupply: false,
-    })).toEqual({ taxableAmount: 0.86, taxAmount: 0.16, lineTotal: 1.02 });
+    })).toEqual({ taxableAmount: 0.85, taxAmount: 0.16, lineTotal: 1.01 });
+  });
+
+  it('preserves 999 inclusive on intrastate invoices while keeping equal GST halves', () => {
+    expect(computeLineTotal({
+      unitPrice: 999, quantity: 1, gstRate: 18, taxInclusive: true, interstateSupply: false,
+    })).toEqual({ taxableAmount: 846.62, taxAmount: 152.38, lineTotal: 999 });
+    expect(computeInvoiceTotals([{ unitPrice: 999, quantity: 1, gstRate: 18 }], {
+      taxInclusive: true, interstateSupply: false,
+    })).toEqual({
+      taxableAmount: 846.62, taxAmount: 152.38, totalAmount: 999,
+      invoiceDiscountAmount: 0, afterDiscountTotal: 999, roundOffAmount: 0, total: 999,
+    });
+    expect(computeLineTotal({
+      unitPrice: 999, quantity: 1, gstRate: 18, taxInclusive: true, interstateSupply: true,
+    })).toEqual({ taxableAmount: 846.61, taxAmount: 152.39, lineTotal: 999 });
   });
 
   it('rounds fractional quantities and a percentage line discount before recomputing tax', () => {
