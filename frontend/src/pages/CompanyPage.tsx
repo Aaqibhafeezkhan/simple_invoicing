@@ -1019,7 +1019,7 @@ export default function CompanyPage() {
               </div>
             </div>
             <p className="section-copy" style={{ marginTop: '8px' }}>
-              Save your company details first. After saving, you can optionally adjust invoice numbering series.
+              Save your company details first. Then we will help you create your first invoice.
             </p>
             <div className="button-row" style={{ marginTop: '16px' }}>
               <button
