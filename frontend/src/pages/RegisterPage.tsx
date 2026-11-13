@@ -54,19 +54,22 @@ export default function RegisterPage() {
           <p className="eyebrow">Almost there</p>
           <h2 className="page-title">Check your email</h2>
           <p className="section-copy">
-            If {submittedEmail} is new to us, we have sent a link to it. Open the link to confirm your
-            address and choose your password.
+            We have sent an email to {submittedEmail}. Open its link to confirm your address and choose your
+            password. If you already have an account with this address, the email tells you how to sign in
+            instead.
           </p>
         </div>
         {toasts}
         <button type="button" className="button button--ghost" onClick={() => void onResend()}>
           Resend verification email
         </button>
-        <p className="muted-text" style={{ margin: 0 }}>
-          Already have an account with this address? We will not send a new link, so{' '}
-          <Link to="/login" style={{ textDecoration: 'underline' }}>sign in</Link> or{' '}
-          <Link to="/forgot-password" style={{ textDecoration: 'underline' }}>reset your password</Link>.
-        </p>
+        {/* People who signed up before, often with Google, land here and wait for a
+            link; the way back in has to be a button, not a footnote. */}
+        <div className="stack" style={{ gap: '8px' }}>
+          <p className="muted-text" style={{ margin: 0 }}>Signed up before, maybe with Google?</p>
+          <Link to="/login" className="button button--secondary">Go to sign in</Link>
+          <Link to="/forgot-password" style={{ textDecoration: 'underline' }}>Forgot your password?</Link>
+        </div>
       </AuthLayout>
     );
   }

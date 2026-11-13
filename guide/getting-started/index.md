@@ -19,7 +19,7 @@ Simple Invoicing runs in your browser on a laptop or phone, with nothing to inst
 
 ![The sign-up page](/screens/register.webp)
 
-If no email arrives, check your spam folder. The **Resend verification email** button sends another link. If you already have an account with this address, no new link is sent, so sign in or reset your password.
+If no email arrives, check your spam folder. The **Resend verification email** button sends another link. If you already have an account with this address, the email tells you how to sign in instead, with **Continue with Google** if that is how you signed up.
 
 ## 2. Set up your company
 

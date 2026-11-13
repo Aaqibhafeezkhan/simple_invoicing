@@ -8,7 +8,7 @@ description: "Answers to common problems with signing in, GST invoices, GST rate
 ## Signing in
 
 **I did not get the verification email.**
-Check your spam folder, then use **Resend verification email**. The link lasts 24 hours. If you already have an account with that address, no new link is sent, so sign in or use **Forgot password?**.
+Check your spam folder, then use **Resend verification email**. The link lasts 24 hours. If you already have an account with that address, you get an email telling you how to sign in instead: with **Continue with Google** if you signed up that way, or with **Forgot password?** to set a new password.
 
 **"This password is too common and easy to guess".**
 Choose a less obvious one, such as three unrelated words.

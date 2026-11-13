@@ -285,11 +285,38 @@ def test_register_existing_verified_address_answers_the_same_and_changes_nothing
 
     assert existing.status_code == fresh.status_code == 202
     assert existing.json() == fresh.json()
-    assert outbox == []
+    # The owner hears why no link came; nothing in it signs anyone in.
+    (msg,) = outbox
+    assert msg["To"] == "owner@example.com"
+    assert msg["Subject"] == "You already have an account"
+    body = _body(msg)
+    assert "https://app.si.test/login" in body
+    assert "https://app.si.test/forgot-password" in body
+    assert "token=" not in body
+    assert "Continue with Google" not in body
     owner = db_session.query(User).filter(User.email == "owner@example.com").one()
     db_session.refresh(owner)
     assert verify_password("GoodPass@123", owner.hashed_password)
     assert db_session.query(User).count() == 2
+
+
+def test_register_with_a_google_account_says_to_continue_with_google(client, db_session, shared, outbox):
+    _user(db_session, email="owner@example.com", password=None)
+
+    assert _register(client, email="owner@example.com").status_code == 202
+
+    (msg,) = outbox
+    assert msg["To"] == "owner@example.com"
+    assert "Continue with Google" in _body(msg)
+    assert "token=" not in _body(msg)
+
+
+def test_register_with_a_deactivated_account_sends_nothing(client, db_session, shared, outbox):
+    _user(db_session, email="gone@example.com", active=False)
+
+    assert _register(client, email="gone@example.com").status_code == 202
+
+    assert outbox == []
 
 
 def test_register_existing_unverified_sends_a_fresh_link_without_changing_the_account(client, db_session, shared, outbox):
@@ -683,8 +710,12 @@ def test_resend_verification(client, db_session, shared, outbox):
         assert response.status_code == 202
         assert response.json() == {"detail": "If that address is waiting to be confirmed, a new link is on its way."}
 
-    (msg,) = outbox
-    assert msg["To"] == "pending@example.com"
+    pending, done = outbox
+    assert pending["To"] == "pending@example.com"
+    assert "/verify-email?token=" in _body(pending)
+    # Already confirmed: told how to sign in instead of waiting for a link.
+    assert done["To"] == "done@example.com"
+    assert done["Subject"] == "You already have an account"
 
 
 def test_resend_verification_is_404_without_smtp(client, monkeypatch):

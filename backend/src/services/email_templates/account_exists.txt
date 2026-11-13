@@ -1,0 +1,21 @@
+{#- account_exists.txt — Plain-text twin of account_exists.html. Same variables. -#}
+Hello,
+
+Someone, probably you, just tried to create an account with this email address. You already have one, so there is nothing to confirm. Your invoices and settings are all still there.
+
+Sign in here:
+
+{{ login_url }}
+
+{% if uses_google -%}
+You created this account with Google, so choose Continue with Google on the sign-in page. To sign in with a password instead, choose Forgot password? there and we will email you a link to set one:
+{%- else -%}
+Forgotten your password? Choose Forgot password? on the sign-in page and we will email you a link to choose a new one:
+{%- endif %}
+
+{{ forgot_url }}
+
+If this was not you, you can ignore this email. Nothing about your account has changed.
+
+-- 
+{{ company_name }}

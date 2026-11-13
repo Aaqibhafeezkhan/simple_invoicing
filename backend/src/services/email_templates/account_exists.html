@@ -1,0 +1,43 @@
+{#
+  account_exists.html — Sent when someone signs up, or asks for a confirmation link
+  again, with an address that already has an account. The sign-up page answers the
+  same either way, so this mail is how the owner learns why no confirmation link
+  came. It goes only to the address on the account. Extends base.html.
+
+  Variables (in addition to base.html variables):
+    login_url        (str)  — {PUBLIC_APP_BASE_URL}/login
+    forgot_url       (str)  — {PUBLIC_APP_BASE_URL}/forgot-password
+    uses_google      (bool) — the account has no password: it was made with Google
+#}
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+
+{% block title %}You already have an account{% endblock %}
+{% block preheader %}<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; color: #f5f3ef;">No new account needed. Here is how to sign in.</div>{% endblock %}
+
+{% block content %}
+<p style="margin: 0 0 12px 0; font-size: 15px; color: #fcfbf8;">Hello,</p>
+<p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #c0bcaf;">Someone, probably you, just tried to create an account with this email address. You already have one, so there is nothing to confirm. Your invoices and settings are all still there.</p>
+
+{% call ui.recap("Account", "Sign in to your account") %}
+    {{ ui.button(login_url, "Sign in") }}
+    {% if uses_google %}
+    {{ ui.hint("You created this account with Google, so choose Continue with Google on the sign-in page. To sign in with a password instead, choose Forgot password? there and we will email you a link to set one.") }}
+    {% else %}
+    {{ ui.hint("Forgotten your password? Choose Forgot password? on the sign-in page and we will email you a link to choose a new one.") }}
+    {% endif %}
+{% endcall %}
+
+{{ ui.closing("If this was not you, you can ignore this email. Nothing about your account has changed.") }}
+<p style="margin: 10px 0 0 0; font-size: 12.5px; line-height: 1.6; color: #a29d91; word-break: break-all;">
+    Sign in: {{ login_url }}<br>Forgot password: {{ forgot_url }}
+</p>
+{% endblock %}
+
+{# Account mail, not a marketing send: no pitch. #}
+{% block pitch %}{% endblock %}
+
+{% block footer %}
+<strong style="color: #4a463f;">{{ company_name }}</strong><br>
+You are receiving this because this address was used to sign up.
+{% endblock %}

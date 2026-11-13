@@ -177,6 +177,10 @@ def _verify_token_for(user: User) -> str:
     )
 
 
+def _send_account_exists(user: User) -> None:
+    platform_mail.send_account_exists_email(user.email, uses_google=user.hashed_password is None)
+
+
 def _reset_token_for(user: User) -> str:
     return create_purpose_token(
         str(user.id),
@@ -340,6 +344,11 @@ def register(
         # registering this address must not be able to kill the owner's.
         if existing.is_active and not existing.email_verified:
             background_tasks.add_task(platform_mail.send_verification_email, existing.email, _verify_token_for(existing))
+        elif existing.is_active:
+            # Someone who forgot they signed up (often with Google, so there is no
+            # password to sign in with) would otherwise wait for a link that never
+            # comes. Tell the owner, and only the owner, how to get back in.
+            background_tasks.add_task(_send_account_exists, existing)
         return accepted
 
     user = User(
@@ -428,6 +437,8 @@ def resend_verification(
     user = find_user_by_email(db, email)
     if user is not None and user.is_active and not user.email_verified:
         background_tasks.add_task(platform_mail.send_verification_email, user.email, _verify_token_for(user))
+    elif user is not None and user.is_active:
+        background_tasks.add_task(_send_account_exists, user)
     return {"detail": "If that address is waiting to be confirmed, a new link is on its way."}
 
 

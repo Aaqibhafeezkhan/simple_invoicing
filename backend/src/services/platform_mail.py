@@ -119,3 +119,18 @@ def send_password_reset_email(to: str, token: str) -> None:
         "reset_password",
         {"action_url": app_link("/reset-password", token=token), "valid_for": "1 hour"},
     )
+
+
+def send_account_exists_email(to: str, uses_google: bool) -> None:
+    """Why no confirmation link came: the address already has an account.
+
+    Sign-up answers the same for every address, so this goes only to the address
+    on the account and carries nothing that signs anyone in: a sign-in link and the
+    forgot-password page, neither of which expires.
+    """
+    _send(
+        to,
+        "You already have an account",
+        "account_exists",
+        {"login_url": app_link("/login"), "forgot_url": app_link("/forgot-password"), "uses_google": uses_google},
+    )
