@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronsLeft, ChevronRight, LogOut } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import api from '../api/client';
+import type { CompanyProfile } from '../types/api';
+import { COMPANY_SETUP_PATH, isCompanySetupRequired } from '../utils/companySetup';
 import BrandMark from './BrandMark';
 import SidebarFYSwitcher from './SidebarFYSwitcher';
 import { SETTINGS_ENTRY, sectionIdForPath, visiblePrimaryNav, type NavLeaf } from '../config/navigation';
@@ -24,6 +28,15 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const entries = visiblePrimaryNav(isAdmin, canManagePlatform);
   const currentSection = sectionIdForPath(location.pathname);
 
+  // Same key as the route guard, so saving the company (which invalidates it)
+  // flips this back without a reload.
+  const companyQuery = useQuery({
+    queryKey: ['company-setup-required'],
+    queryFn: async () => (await api.get<CompanyProfile>('/company/')).data,
+    retry: false,
+  });
+  const setupRequired = isCompanySetupRequired(companyQuery.data, companyQuery.error, companyQuery.isLoading);
+
   // Escape-to-close lives in Layout, which owns the drawer state.
 
   // Arriving inside a section opens it. Manual toggles are left alone: this
@@ -33,8 +46,38 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     if (currentSection) openSectionFor(currentSection);
   }, [currentSection, openSectionFor]);
 
+  // Until a company exists every page bounces back to setup, so these rows
+  // are shown as unavailable instead of silently doing nothing.
+  const renderLocked = (key: string, label: string, Icon: NavLeaf['icon'], extraClass = '') => (
+    <span
+      key={key}
+      className={`sidebar__link sidebar__link--disabled${extraClass}`}
+      role="link"
+      aria-disabled="true"
+      title="Save your company details to open this page"
+    >
+      <Icon size={18} aria-hidden="true" />
+      <span className="sidebar__link-label">{label}</span>
+    </span>
+  );
+
   const renderLeaf = (item: NavLeaf, extraClass = '') => {
     const Icon = item.icon;
+    if (setupRequired && item !== SETTINGS_ENTRY) return renderLocked(item.to, item.label, Icon, extraClass);
+    if (setupRequired) {
+      return (
+        <NavLink
+          key={item.to}
+          to={COMPANY_SETUP_PATH}
+          className={({ isActive }) => linkClass(isActive, extraClass)}
+          onClick={() => onClose?.()}
+          title="Company setup"
+        >
+          <Icon size={18} aria-hidden="true" />
+          <span className="sidebar__link-label">Company setup</span>
+        </NavLink>
+      );
+    }
     return (
       <NavLink
         key={item.to}
@@ -87,10 +130,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       <nav className="sidebar__nav" id="sidebar-nav" aria-label="Sidebar navigation">
+        {setupRequired && (
+          <p className="sidebar__setup-note" role="note">
+            Save your company details to open the rest of the app.
+          </p>
+        )}
         {entries.map((entry) => {
           if (entry.kind === 'link') return renderLeaf(entry);
 
           const Icon = entry.icon;
+          if (setupRequired) return renderLocked(entry.id, entry.label, Icon);
           const isCurrent = currentSection === entry.id;
 
           // A 68px rail has no room to expand into, and a disclosure that
