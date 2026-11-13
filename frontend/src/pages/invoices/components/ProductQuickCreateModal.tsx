@@ -32,9 +32,16 @@ export default function ProductQuickCreateModal() {
   const closeProductCreateModal = useInvoiceComposerStore((state) => state.closeProductCreateModal);
   const setFeedbackError = useInvoiceComposerStore((state) => state.setFeedbackError);
   const setFeedbackSuccess = useInvoiceComposerStore((state) => state.setFeedbackSuccess);
+  const productCreateName = useInvoiceComposerStore((state) => state.productCreateName);
   const setCreatedProduct = useInvoiceComposerStore((state) => state.setCreatedProduct);
   const [productForm, setProductForm] = useState<ProductFormState>(createInitialProductForm());
   const [productSubmitting, setProductSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (showProductCreateModal && productCreateName) {
+      setProductForm((form) => ({ ...form, name: productCreateName }));
+    }
+  }, [showProductCreateModal, productCreateName]);
 
   /* Stock is only counted here for a plain tracked product: serials are received
      on a purchase entry, and an untracked product has no stock to open with. */

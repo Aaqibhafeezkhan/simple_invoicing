@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import api from '../api/client';
 import type { Product } from '../types/api';
+import { createOption } from './productComboboxCreate';
 
 type ProductComboboxProps = {
   id: string;
@@ -14,10 +15,15 @@ type ProductComboboxProps = {
    * the selection is required (invoice line items).
    */
   onClear?: () => void;
+  /**
+   * Opt-in: when nothing matches the typed text, offer "Create product" and call this
+   * with the typed name. Omit it where creating a product from here makes no sense.
+   */
+  onCreateNew?: (name: string) => void;
   required?: boolean;
 };
 
-export default function ProductCombobox({ id, products, value, onChange, onQueryChange, onClear, required }: ProductComboboxProps) {
+export default function ProductCombobox({ id, products, value, onChange, onQueryChange, onClear, onCreateNew, required }: ProductComboboxProps) {
   const selectedProduct = products.find((p) => String(p.id) === value);
   const [query, setQuery] = useState(selectedProduct ? `${selectedProduct.name} (${selectedProduct.sku})` : '');
   const [open, setOpen] = useState(false);
@@ -72,6 +78,20 @@ export default function ProductCombobox({ id, products, value, onChange, onQuery
         : products
     : [];
 
+  const create = open
+    ? createOption({ query, matchCount: suggestions.length, settled: serverResults !== null, canCreate: Boolean(onCreateNew) })
+    : null;
+
+  function handleCreate() {
+    if (!create || !onCreateNew) return;
+    latestRequest.current += 1;
+    setOpen(false);
+    setActiveIndex(-1);
+    setSearching(false);
+    setServerResults(null);
+    onCreateNew(create.name);
+  }
+
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setQuery(val);
@@ -125,7 +145,7 @@ export default function ProductCombobox({ id, products, value, onChange, onQuery
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, Math.max(suggestions.length, create ? 1 : 0) - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
@@ -133,6 +153,8 @@ export default function ProductCombobox({ id, products, value, onChange, onQuery
       e.preventDefault();
       if (activeIndex >= 0 && suggestions[activeIndex]) {
         handleSelect(suggestions[activeIndex]);
+      } else if (create) {
+        handleCreate();
       }
     } else if (e.key === 'Escape') {
       latestRequest.current += 1;
@@ -276,6 +298,25 @@ export default function ProductCombobox({ id, products, value, onChange, onQuery
           }}
         >
           No products matching "{query}"
+          {create && (
+            <ul id={listboxId} role="listbox" style={{ margin: '6px -12px -8px', padding: 0, listStyle: 'none', borderTop: '1px solid var(--border)' }}>
+              <li
+                id={`${id}-option-0`}
+                role="option"
+                aria-selected={activeIndex === 0}
+                onMouseDown={(e) => { e.preventDefault(); handleCreate(); }}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  background: activeIndex === 0 ? 'var(--accent)' : 'transparent',
+                  color: activeIndex === 0 ? 'var(--on-accent)' : 'var(--accent)',
+                }}
+              >
+                + {create.label}
+              </li>
+            </ul>
+          )}
         </div>
       )}
     </div>
