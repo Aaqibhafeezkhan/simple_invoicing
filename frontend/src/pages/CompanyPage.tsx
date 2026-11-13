@@ -8,6 +8,7 @@ import CurrencyChangeDialog from '../components/CurrencyChangeDialog';
 import StatusToasts from '../components/StatusToasts';
 import { useAuth } from '../context/AuthContext';
 import { useAuthStore } from '../store/useAuthStore';
+import { useFYStore } from '../store/useFYStore';
 import { useFY } from '../context/FYContext';
 import type { CompanyProfile, CompanyProfileUpdate, InvoiceSeries, InvoiceSeriesUpdate, CompanyTermOut } from '../types/api';
 import { clearSetupDraft, isCompanyConfigured, readSetupDraft, writeSetupDraft } from '../utils/companySetup';
@@ -907,6 +908,9 @@ export default function CompanyPage() {
         // The creator's role only exists now; without this they would look like a
         // non-admin until the next page load.
         await useAuthStore.getState().hydrateUserRole();
+        // The FY list was loaded at sign-in, when the API still answered 409 (no
+        // company). The backend has now seeded an active FY, so reload it.
+        await useFYStore.getState().refreshFYList();
         await queryClient.invalidateQueries({ queryKey: ['company-setup-required'] });
         await queryClient.invalidateQueries({ queryKey: ['sidebar-companies'] });
         setSuccess('Company created. New invoices will now show this as billing company.');
