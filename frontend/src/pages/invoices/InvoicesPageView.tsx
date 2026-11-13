@@ -1722,18 +1722,24 @@ export default function InvoicesPage() {
                 <div className="line-items__header">
                   <p className="eyebrow" style={{ margin: 0 }}>Line items</p>
                   <div className="line-items__tools">
-                    <label className="inline-check" htmlFor="invoice-tax-inclusive">
-                      <input
-                        id="invoice-tax-inclusive"
-                        type="checkbox"
-                        checked={taxInclusive}
-                        onChange={(event) => {
-                          setTaxInclusive(event.target.checked);
-                          updateInvoiceComposerPrefs({ taxInclusive: event.target.checked });
-                        }}
-                      />
-                      Prices include GST
-                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <label className="inline-check" htmlFor="invoice-tax-inclusive">
+                        <input
+                          id="invoice-tax-inclusive"
+                          type="checkbox"
+                          checked={taxInclusive}
+                          aria-describedby="invoice-tax-inclusive-hint"
+                          onChange={(event) => {
+                            setTaxInclusive(event.target.checked);
+                            updateInvoiceComposerPrefs({ taxInclusive: event.target.checked });
+                          }}
+                        />
+                        Prices include GST
+                      </label>
+                      <small id="invoice-tax-inclusive-hint" className="field-hint">
+                        Tick this if the prices you type already include GST. The app takes the GST out of each price instead of adding it on top.
+                      </small>
+                    </div>
                     <button type="button" className="link-button" onClick={openProductCreateModal}>
                       <Plus size={13} />
                       New product

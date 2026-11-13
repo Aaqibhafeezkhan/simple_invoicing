@@ -375,11 +375,17 @@ export default function CreateInvoiceModal({
                   id="modal-inv-tax-inclusive"
                   type="checkbox"
                   checked={taxInclusive}
+                  aria-describedby="modal-inv-tax-inclusive-hint"
                   onChange={(e) => setTaxInclusive(e.target.checked)}
                 />
-                <label htmlFor="modal-inv-tax-inclusive" style={{ marginBottom: 0, cursor: 'pointer' }}>
-                  Prices include GST
-                </label>
+                <div>
+                  <label htmlFor="modal-inv-tax-inclusive" style={{ marginBottom: 0, cursor: 'pointer' }}>
+                    Prices include GST
+                  </label>
+                  <small id="modal-inv-tax-inclusive-hint" className="field-hint" style={{ display: 'block' }}>
+                    Tick this if the prices you type already include GST. The app takes the GST out of each price instead of adding it on top.
+                  </small>
+                </div>
               </div>
 
               <div className="stack">
