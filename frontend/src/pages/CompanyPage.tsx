@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api, { getApiErrorCode, getApiErrorDetails, getApiErrorMessage } from '../api/client';
@@ -13,6 +13,7 @@ import type { CompanyProfile, CompanyProfileUpdate, InvoiceSeries, InvoiceSeries
 import { clearSetupDraft, isCompanyConfigured, readSetupDraft, writeSetupDraft } from '../utils/companySetup';
 import { isCurrencyChange } from '../utils/currencyChange';
 import { buildSeriesPreview, gstr1SeriesFormatError } from '../utils/seriesPreview';
+import { purchaseTdsSetting } from '../utils/tds';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -732,6 +733,7 @@ export default function CompanyPage() {
     gst: '',
     pan: '',
     tan: '',
+    enable_purchase_tds: false,
     phone_number: '',
     currency_code: 'INR',
     email: '',
@@ -792,6 +794,7 @@ export default function CompanyPage() {
         gst: data.gst || '',
         pan: data.pan || (data.gst ? data.gst.slice(2, 12) : ''),
         tan: data.tan || '',
+        enable_purchase_tds: data.enable_purchase_tds || false,
         phone_number: data.phone_number || '',
         currency_code: data.currency_code || 'USD',
         email: data.email || '',
@@ -878,6 +881,8 @@ export default function CompanyPage() {
         gst: form.gst.trim().toUpperCase(),
         pan: (form.pan || '').trim().toUpperCase(),
         tan: (form.tan || '').trim().toUpperCase(),
+        // Never send the setting on without a TAN: the server refuses that save.
+        enable_purchase_tds: purchaseTdsSetting(form.enable_purchase_tds, form.tan),
         phone_number: form.phone_number.trim(),
         currency_code: form.currency_code.trim().toUpperCase(),
         email: form.email.trim(),
@@ -1149,10 +1154,40 @@ export default function CompanyPage() {
                     id="company-tan"
                     className="input"
                     value={form.tan || ''}
-                    onChange={(event) => setForm((current) => ({ ...current, tan: event.target.value.toUpperCase() }))}
+                    onChange={(event) => {
+                      const tan = event.target.value.toUpperCase();
+                      // Emptying the TAN turns purchase TDS off: it cannot stay on without one.
+                      setForm((current) => ({ ...current, tan, enable_purchase_tds: tan.trim() ? current.enable_purchase_tds : false }));
+                    }}
                     placeholder="ABCD12345E"
                     maxLength={10}
                   />
+                </div>
+
+                <div className="field field--full">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                    <input
+                      id="company-enable-purchase-tds"
+                      type="checkbox"
+                      checked={Boolean(form.enable_purchase_tds) && Boolean((form.tan || '').trim())}
+                      disabled={!(form.tan || '').trim()}
+                      onChange={(e) => setForm((current) => ({ ...current, enable_purchase_tds: e.target.checked }))}
+                    />
+                    <label htmlFor="company-enable-purchase-tds" style={{ marginBottom: 0, cursor: 'pointer', fontWeight: 500 }}>
+                      Deduct TDS on payments to suppliers
+                    </label>
+                  </div>
+                  {!(form.tan || '').trim() ? (
+                    <small className="field-hint" style={{ marginLeft: '24px' }}>Enter the company TAN first.</small>
+                  ) : null}
+                  <small className="field-hint" style={{ marginLeft: '24px' }}>
+                    Is your business required to deduct TDS? Companies, firms, LLPs, trusts and societies must deduct TDS on contractor, professional, commission and rent payments (a 'specified' or 'designated' person under the Income-tax Act 2025). An individual or HUF must do so only if their turnover last year was above ₹1 crore (business) or ₹50 lakh (profession). TDS on purchase of goods (s.393(1) Sl. No. 8(ii), formerly 194Q) applies only if your turnover last year was above ₹10 crore, and only on purchases above ₹50 lakh from one seller in the tax year.
+                  </small>
+                  {form.enable_purchase_tds && (form.tan || '').trim() ? (
+                    <small className="field-hint" style={{ marginLeft: '24px' }}>
+                      <Link to="/tds?tab=payable">View the TDS report</Link>
+                    </small>
+                  ) : null}
                 </div>
 
                 <div className="field">
