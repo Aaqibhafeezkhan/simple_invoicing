@@ -247,6 +247,7 @@ def auth_config():
         "password_signup_enabled": settings.password_signup_enabled,
         "password_reset_enabled": platform_mail.is_configured(),
         "providers": [{"id": spec.id, "name": spec.name} for spec in auth_providers.enabled_providers()],
+        "mcp_url": settings.MCP_RESOURCE_URI if settings.MCP_ENABLED else None,
     }
 
 

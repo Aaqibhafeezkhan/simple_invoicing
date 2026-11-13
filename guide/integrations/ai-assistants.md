@@ -18,6 +18,8 @@ Simple Invoicing has a built-in [MCP](https://modelcontextprotocol.io/) server, 
 1. In your assistant, add a custom connector with this URL:
    - Hosted: `https://app.simpleinvoicings.com/mcp`
    - Your own copy: `https://<your-host>/mcp`
+
+   **Settings → Connected Apps** shows the exact URL for your server, with a **Copy** button.
 2. Sign in to Simple Invoicing when asked.
 3. On the **Authorize** page, check the web address after **Codes will be sent to**. If you do not recognise it, click **Deny**. The app's name is chosen by the app, so the address is what you can trust.
 4. Choose the **Company this access is limited to**. The connection can never reach your other companies.

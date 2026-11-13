@@ -7,6 +7,8 @@ import { SCOPE_LABELS, type OAuthGrant } from '../../features/oauth/types';
 import StatusToasts from '../../components/StatusToasts';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { formatDate } from '../../utils/formatting';
+import { useAuthConfig } from '../../hooks/useAuthConfig';
+import McpConnectPanel from './McpConnectPanel';
 
 /**
  * The other end of the consent screen: every MCP client this user approved,
@@ -78,6 +80,7 @@ export default function ConnectedAppsPage() {
     onSettled: () => setRevokeTarget(null),
   });
 
+  const authConfig = useAuthConfig();
   const grants = grantsQuery.data ?? [];
 
   return (
@@ -92,6 +95,8 @@ export default function ConnectedAppsPage() {
           </p>
         </div>
       </section>
+
+      <McpConnectPanel mcpUrl={authConfig.mcp_url} isLoading={authConfig.isLoading} />
 
       {grantsQuery.isLoading ? (
         <p style={{ opacity: 0.5 }}>Loading…</p>
@@ -108,8 +113,8 @@ export default function ConnectedAppsPage() {
         <div className="empty-state">
           <Plug size={32} opacity={0.3} />
           <p>
-            Nothing is connected. Add this workspace as a connector in Claude, ChatGPT or another MCP client,
-            and the access you approve will be listed here.
+            Nothing is connected yet. Once you add the URL above to an assistant and approve access, it will be
+            listed here.
           </p>
         </div>
       ) : (

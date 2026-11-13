@@ -150,7 +150,12 @@ def test_config_single_tenant_defaults(client, monkeypatch):
     response = client.get("/api/auth/config")
 
     assert response.status_code == 200
-    assert response.json() == {"password_signup_enabled": False, "password_reset_enabled": False, "providers": []}
+    assert response.json() == {
+        "password_signup_enabled": False,
+        "password_reset_enabled": False,
+        "providers": [],
+        "mcp_url": settings.MCP_RESOURCE_URI if settings.MCP_ENABLED else None,
+    }
 
 
 def test_config_shared_hosting_everything_on(client, shared, monkeypatch):
@@ -163,6 +168,7 @@ def test_config_shared_hosting_everything_on(client, shared, monkeypatch):
         "password_signup_enabled": True,
         "password_reset_enabled": True,
         "providers": [{"id": "google", "name": "Google"}],
+        "mcp_url": settings.MCP_RESOURCE_URI if settings.MCP_ENABLED else None,
     }
 
 
@@ -189,7 +195,24 @@ def test_config_single_tenant_lists_google_for_login_and_offers_reset(client, si
         "password_signup_enabled": False,
         "password_reset_enabled": True,
         "providers": [{"id": "google", "name": "Google"}],
+        "mcp_url": settings.MCP_RESOURCE_URI if settings.MCP_ENABLED else None,
     }
+
+
+def test_config_gives_the_mcp_url_to_paste_into_an_assistant(client, monkeypatch):
+    monkeypatch.setattr(settings, "MCP_ENABLED", True)
+    monkeypatch.setattr(settings, "PUBLIC_API_BASE_URL", "https://books.example.com/")
+
+    body = client.get("/api/auth/config").json()
+
+    # The exact resource the OAuth metadata names, or clients reject the token.
+    assert body["mcp_url"] == "https://books.example.com/mcp"
+
+
+def test_config_has_no_mcp_url_when_mcp_is_off(client, monkeypatch):
+    monkeypatch.setattr(settings, "MCP_ENABLED", False)
+
+    assert client.get("/api/auth/config").json()["mcp_url"] is None
 
 
 def test_signup_routes_are_not_in_the_openapi_schema(client):

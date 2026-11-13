@@ -132,3 +132,6 @@ class AuthConfigOut(BaseModel):
     password_signup_enabled: bool
     password_reset_enabled: bool
     providers: list[AuthProviderOut]
+    # The address to paste into Claude, ChatGPT or another MCP client, shown on
+    # Settings -> Connected apps. None when this deployment has MCP switched off.
+    mcp_url: str | None = None

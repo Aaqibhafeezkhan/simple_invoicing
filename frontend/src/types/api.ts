@@ -929,6 +929,8 @@ export type AuthConfig = {
   password_signup_enabled: boolean;
   password_reset_enabled: boolean;
   providers: AuthProvider[];
+  /** The MCP endpoint to paste into an assistant; null when MCP is off. Absent on older servers. */
+  mcp_url?: string | null;
 };
 
 export type RegisterRequest = {
