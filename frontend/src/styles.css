@@ -510,6 +510,29 @@ textarea {
   background: var(--sidebar-hover-bg);
 }
 
+.sidebar__link--disabled,
+.sidebar__link--disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--sidebar-muted);
+}
+
+.sidebar__setup-note {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--sidebar-active-border);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.app-shell--rail .sidebar__setup-note {
+  display: none;
+}
+
 .sidebar__link--active {
   color: var(--sidebar-active-text);
   background: var(--sidebar-active-bg);

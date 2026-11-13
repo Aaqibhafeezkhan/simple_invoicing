@@ -1,6 +1,27 @@
 import { describe, expect, test } from 'vitest';
 import type { CompanyProfile } from '../types/api';
-import { clearSetupDraft, isCompanyConfigured, readSetupDraft, writeSetupDraft } from './companySetup';
+import { clearSetupDraft, isCompanyConfigured, isCompanySetupRequired, readSetupDraft, writeSetupDraft } from './companySetup';
+
+describe('isCompanySetupRequired', () => {
+  const conflict = Object.assign(new Error('x'), {
+    isAxiosError: true,
+    response: { status: 409, data: { detail: { code: 'company_required' } } },
+  });
+
+  test('required on a company_required conflict', () => {
+    expect(isCompanySetupRequired(undefined, conflict)).toBe(true);
+  });
+  test('required for a profile with no name', () => {
+    expect(isCompanySetupRequired({ name: ' ' } as CompanyProfile, null)).toBe(true);
+  });
+  test('not required once a company is named', () => {
+    expect(isCompanySetupRequired({ name: 'Acme' } as CompanyProfile, null)).toBe(false);
+  });
+  test('does not block while loading or on unrelated failures', () => {
+    expect(isCompanySetupRequired(undefined, null, true)).toBe(false);
+    expect(isCompanySetupRequired(undefined, new Error('network'))).toBe(false);
+  });
+});
 
 describe('isCompanyConfigured — falsey or incomplete profiles are not configured', () => {
   test('null profile', () => {

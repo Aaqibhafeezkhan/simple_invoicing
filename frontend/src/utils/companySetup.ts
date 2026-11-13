@@ -1,7 +1,32 @@
+import axios from 'axios';
 import type { CompanyProfile } from '../types/api';
+
+export const COMPANY_SETUP_PATH = '/settings/company?setup=required';
 
 export function isCompanyConfigured(company: CompanyProfile | null | undefined): boolean {
   return Boolean(company?.name?.trim());
+}
+
+/**
+ * Whether the signed-in user still has to create a company. Mirrors the route
+ * guard: a 409 company_required, or a profile with no name. While loading, or
+ * on any other failure, the user is not treated as blocked.
+ */
+export function isCompanySetupRequired(
+  data: CompanyProfile | null | undefined,
+  error: unknown,
+  isLoading = false,
+): boolean {
+  if (isLoading) return false;
+  if (
+    axios.isAxiosError(error) &&
+    error.response?.status === 409 &&
+    error.response.data?.detail?.code === 'company_required'
+  ) {
+    return true;
+  }
+  if (error) return false;
+  return !isCompanyConfigured(data);
 }
 
 /**
