@@ -8,6 +8,9 @@ import CurrencyChangeDialog from '../components/CurrencyChangeDialog';
 import StatusToasts from '../components/StatusToasts';
 import { useAuth } from '../context/AuthContext';
 import { useAuthStore } from '../store/useAuthStore';
+import { useFirstInvoiceTourStore } from '../store/useFirstInvoiceTourStore';
+import { INVOICE_PATH } from '../features/firstInvoiceTour/tourSteps';
+import { setupPromptChoices } from '../utils/setupPrompt';
 import { useFY } from '../context/FYContext';
 import type { CompanyProfile, CompanyProfileUpdate, InvoiceSeries, InvoiceSeriesUpdate, CompanyTermOut } from '../types/api';
 import { clearSetupDraft, isCompanyConfigured, readSetupDraft, writeSetupDraft } from '../utils/companySetup';
@@ -724,6 +727,8 @@ export default function CompanyPage() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { isAdmin } = useAuth();
+  const companyRole = useAuthStore((state) => state.companyRole);
+  const setupChoices = setupPromptChoices(companyRole, isAdmin);
   const seriesSectionRef = useRef<HTMLElement>(null);
   const companySetupSectionRef = useRef<HTMLElement>(null);
   const gstInputRef = useRef<HTMLInputElement>(null);
@@ -957,6 +962,12 @@ export default function CompanyPage() {
     }
   }
 
+  function handleCreateFirstInvoice() {
+    setShowFirstSetupPrompt(false);
+    useFirstInvoiceTourStore.getState().start();
+    navigate(INVOICE_PATH);
+  }
+
   function handleSkipOnboardingStep() {
     setShowFirstSetupPrompt(false);
     navigate('/');
@@ -1041,13 +1052,20 @@ export default function CompanyPage() {
                 <h2 id="company-created-title" className="nav-panel__title">Company created successfully</h2>
               </div>
             </div>
-            <p className="section-copy" style={{ marginTop: '8px' }}>
-              {isAdmin
-                ? 'You can now optionally adjust invoice series before creating invoices.'
-                : 'Setup is complete. You can continue to dashboard now.'}
-            </p>
+            <p className="section-copy" style={{ marginTop: '8px' }}>{setupChoices.copy}</p>
             <div className="button-row" style={{ marginTop: '16px' }}>
-              {isAdmin ? (
+              {setupChoices.showFirstInvoice ? (
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={handleCreateFirstInvoice}
+                  title="Create my first invoice"
+                  aria-label="Create my first invoice"
+                >
+                  Create my first invoice
+                </button>
+              ) : null}
+              {setupChoices.showAdjustSeries ? (
                 <button
                   type="button"
                   className="button button--secondary"
