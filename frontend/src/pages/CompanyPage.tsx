@@ -6,7 +6,6 @@ import api, { getApiErrorCode, getApiErrorDetails, getApiErrorMessage } from '..
 import { createTerm, deleteTerm, removeLogo, updateTerm, uploadLogo } from '../api/company';
 import CurrencyChangeDialog from '../components/CurrencyChangeDialog';
 import StatusToasts from '../components/StatusToasts';
-import { useAuth } from '../context/AuthContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFYStore } from '../store/useFYStore';
 import { useFirstInvoiceTourStore } from '../store/useFirstInvoiceTourStore';
@@ -727,9 +726,8 @@ export default function CompanyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const { isAdmin } = useAuth();
   const companyRole = useAuthStore((state) => state.companyRole);
-  const setupChoices = setupPromptChoices(companyRole, isAdmin);
+  const setupChoices = setupPromptChoices(companyRole);
   const seriesSectionRef = useRef<HTMLElement>(null);
   const companySetupSectionRef = useRef<HTMLElement>(null);
   const gstInputRef = useRef<HTMLInputElement>(null);
@@ -957,15 +955,6 @@ export default function CompanyPage() {
     }
   }
 
-  function handleAdjustInvoiceSeries() {
-    setShowFirstSetupPrompt(false);
-    const section = seriesSectionRef.current;
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      section.focus();
-    }
-  }
-
   function handleCreateFirstInvoice() {
     setShowFirstSetupPrompt(false);
     useFirstInvoiceTourStore.getState().start();
@@ -1069,25 +1058,12 @@ export default function CompanyPage() {
                   Create my first invoice
                 </button>
               ) : null}
-              {setupChoices.showAdjustSeries ? (
-                <button
-                  type="button"
-                  className="button button--secondary"
-                  onClick={handleAdjustInvoiceSeries}
-                  title="Adjust invoice series"
-                  aria-label="Adjust invoice series"
-                >
-                  Adjust invoice series
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="button button--ghost"
                 onClick={handleSkipOnboardingStep}
-                title="Skip for now"
-                aria-label="Skip for now"
               >
-                Skip for now
+                {setupChoices.dismissLabel}
               </button>
             </div>
           </div>

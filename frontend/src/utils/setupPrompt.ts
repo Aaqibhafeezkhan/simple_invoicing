@@ -3,25 +3,26 @@ import { canStartTour } from '../features/firstInvoiceTour/tourSteps';
 
 export type SetupPromptChoices = {
   showFirstInvoice: boolean;
-  showAdjustSeries: boolean;
+  dismissLabel: string;
   copy: string;
 };
 
-/** What the "Company created" dialog offers, by role. */
-export function setupPromptChoices(companyRole: UserProfile['role'] | null, isAdmin: boolean): SetupPromptChoices {
-  const showFirstInvoice = canStartTour(companyRole);
-  if (showFirstInvoice) {
+/**
+ * What the "Company created" dialog offers, by role. Invoice numbering is left
+ * out on purpose: the default series works, and new users who stopped to adjust
+ * it never reached their first invoice.
+ */
+export function setupPromptChoices(companyRole: UserProfile['role'] | null): SetupPromptChoices {
+  if (canStartTour(companyRole)) {
     return {
-      showFirstInvoice,
-      showAdjustSeries: isAdmin,
+      showFirstInvoice: true,
+      dismissLabel: 'Skip for now',
       copy: 'Your company is ready. Create your first invoice now. We will show you each step.',
     };
   }
   return {
-    showFirstInvoice,
-    showAdjustSeries: isAdmin,
-    copy: isAdmin
-      ? 'You can now optionally adjust invoice series before creating invoices.'
-      : 'Setup is complete. You can continue to dashboard now.',
+    showFirstInvoice: false,
+    dismissLabel: 'Go to dashboard',
+    copy: 'Setup is complete. You can continue to the dashboard now.',
   };
 }
