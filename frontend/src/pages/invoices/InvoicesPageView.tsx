@@ -56,6 +56,7 @@ export default function InvoicesPage() {
   const setSelectedLedgerId = useInvoiceComposerStore((state) => state.setSelectedLedgerId);
   const openLedgerCreateModal = useInvoiceComposerStore((state) => state.openLedgerCreateModal);
   const openProductCreateModal = useInvoiceComposerStore((state) => state.openProductCreateModal);
+  const openProductCreateFromLine = useInvoiceComposerStore((state) => state.openProductCreateFromLine);
   const createdProduct = useInvoiceComposerStore((state) => state.createdProduct);
   const setCreatedProduct = useInvoiceComposerStore((state) => state.setCreatedProduct);
   const openStockUpdateModal = useInvoiceComposerStore((state) => state.openStockUpdateModal);
@@ -494,7 +495,10 @@ export default function InvoicesPage() {
   function placeCreatedProduct(product: Product) {
     adoptProduct(product);
     const current = itemsRef.current;
-    const emptyIndex = current.findIndex((item) => !item.productId);
+    /* Made from a line's own product box ("Create product"): it goes on that line. */
+    const requestedLineId = useInvoiceComposerStore.getState().productCreateLineId;
+    const requestedIndex = requestedLineId === null ? -1 : current.findIndex((item) => item.id === requestedLineId);
+    const emptyIndex = requestedIndex >= 0 ? requestedIndex : current.findIndex((item) => !item.productId);
     let itemId: number;
     if (emptyIndex >= 0) {
       itemId = current[emptyIndex].id;
@@ -1793,6 +1797,7 @@ export default function InvoicesPage() {
                             updateItem(item.id, 'productId', productId);
                             updateItem(item.id, 'unit_price', String(newProduct.price));
                           }}
+                          onCreateNew={(name) => openProductCreateFromLine(name, item.id)}
                           required
                         />
                       </div>

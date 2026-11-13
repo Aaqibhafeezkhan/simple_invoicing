@@ -43,6 +43,8 @@ The **Prices include GST** checkbox changes what you type to the amount includin
 
 The GST rate and HSN come from the product and cannot be changed on the line. To change them, edit the product.
 
+If the product does not exist yet, type its name in the line's product box and choose **Create product "..."**. The new product is added to that line.
+
 **New product** and **Update stock** above the lines let you fix things without leaving the invoice.
 
 ## Advanced options
