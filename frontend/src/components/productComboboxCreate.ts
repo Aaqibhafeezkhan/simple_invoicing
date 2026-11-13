@@ -15,3 +15,19 @@ export function createOption({ query, matchCount, settled, canCreate }: CreateOp
   if (!name) return null;
   return { name, label: `Create product "${name}"` };
 }
+
+/**
+ * The label the box should show after its selected product changes, or null to
+ * leave the text alone. A cleared selection clears the stale name, but only on
+ * the change itself: while nothing is selected, the text is what the user is
+ * typing, and a product list refetch must not wipe it.
+ */
+export function labelForValueChange(
+  previousValue: string,
+  value: string,
+  product: { name: string; sku: string } | undefined,
+): string | null {
+  if (product) return `${product.name} (${product.sku})`;
+  if (previousValue && !value) return '';
+  return null;
+}

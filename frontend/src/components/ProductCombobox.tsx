@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import api from '../api/client';
 import type { Product } from '../types/api';
-import { createOption } from './productComboboxCreate';
+import { createOption, labelForValueChange } from './productComboboxCreate';
 
 type ProductComboboxProps = {
   id: string;
@@ -36,10 +36,13 @@ export default function ProductCombobox({ id, products, value, onChange, onQuery
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRequest = useRef(0);
 
-  // Sync label when external value changes (e.g. default product on load)
+  // Sync label when external value changes (e.g. default product on load, or the
+  // form resetting after an invoice is saved, which keeps the same line id).
+  const previousValue = useRef(value);
   useEffect(() => {
-    const p = products.find((prod) => String(prod.id) === value);
-    if (p) setQuery(`${p.name} (${p.sku})`);
+    const next = labelForValueChange(previousValue.current, value, products.find((prod) => String(prod.id) === value));
+    previousValue.current = value;
+    if (next !== null) setQuery(next);
   }, [value, products]);
 
   // Typed text is not a selection. Without this, `required` passes as soon as

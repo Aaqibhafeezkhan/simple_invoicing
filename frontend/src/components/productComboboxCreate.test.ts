@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOption } from './productComboboxCreate';
+import { createOption, labelForValueChange } from './productComboboxCreate';
 
 const base = { query: 'Assam Tea', matchCount: 0, settled: true, canCreate: true };
 
@@ -22,5 +22,21 @@ describe('createOption', () => {
   });
   it('offers nothing when the caller did not opt in', () => {
     expect(createOption({ ...base, canCreate: false })).toBeNull();
+  });
+});
+
+describe('labelForValueChange', () => {
+  const bulb = { name: 'LED Bulb 9W', sku: 'LED-9W' };
+  it('shows the selected product', () => {
+    expect(labelForValueChange('', '7', bulb)).toBe('LED Bulb 9W (LED-9W)');
+  });
+  it('clears the old name when the form resets the line', () => {
+    expect(labelForValueChange('7', '', undefined)).toBe('');
+  });
+  it('leaves typed text alone while nothing is selected', () => {
+    expect(labelForValueChange('', '', undefined)).toBeNull();
+  });
+  it('leaves the text alone while a selected product is still loading', () => {
+    expect(labelForValueChange('', '7', undefined)).toBeNull();
   });
 });
