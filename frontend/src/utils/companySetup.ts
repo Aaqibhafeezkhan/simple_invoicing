@@ -74,3 +74,14 @@ export function clearSetupDraft(owner: string | null, storage: DraftStorage | nu
     /* Nothing to clear. */
   }
 }
+
+/**
+ * Whether the company form holds edits that are not saved yet. Before a profile
+ * has loaded there is nothing to compare against, so nothing counts as unsaved.
+ */
+export function isCompanyFormDirty<T extends object>(saved: T | null, current: T): boolean {
+  if (!saved) return false;
+  const a = saved as Record<string, unknown>;
+  const b = current as Record<string, unknown>;
+  return Object.keys({ ...a, ...b }).some((key) => a[key] !== b[key]);
+}

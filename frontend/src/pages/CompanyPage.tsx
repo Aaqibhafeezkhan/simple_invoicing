@@ -13,7 +13,8 @@ import { INVOICE_PATH } from '../features/firstInvoiceTour/tourSteps';
 import { setupPromptChoices } from '../utils/setupPrompt';
 import { useFY } from '../context/FYContext';
 import type { CompanyProfile, CompanyProfileUpdate, InvoiceSeries, InvoiceSeriesUpdate, CompanyTermOut } from '../types/api';
-import { clearSetupDraft, isCompanyConfigured, readSetupDraft, writeSetupDraft } from '../utils/companySetup';
+import { clearSetupDraft, isCompanyConfigured, isCompanyFormDirty, readSetupDraft, writeSetupDraft } from '../utils/companySetup';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { isCurrencyChange } from '../utils/currencyChange';
 import { buildSeriesPreview, gstr1SeriesFormatError } from '../utils/seriesPreview';
 import { purchaseTdsSetting } from '../utils/tds';
@@ -722,6 +723,8 @@ function EWayBillSettingsCard({
 // CompanyPage
 // ---------------------------------------------------------------------------
 
+const CASH_BANK_PATH = '/cash-bank/accounts';
+
 export default function CompanyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -731,6 +734,12 @@ export default function CompanyPage() {
   const seriesSectionRef = useRef<HTMLElement>(null);
   const companySetupSectionRef = useRef<HTMLElement>(null);
   const gstInputRef = useRef<HTMLInputElement>(null);
+  // What the server holds, to tell unsaved edits apart. Null until a profile loads.
+  const [savedForm, setSavedForm] = useState<CompanyProfileUpdate | null>(null);
+  // Where to go once the pending save succeeds ("Save and open").
+  const pendingNavRef = useRef<string | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<CompanyProfileUpdate>({
     name: '',
     address: '',
@@ -792,7 +801,7 @@ export default function CompanyPage() {
       setCompanyId(data.id);
       setSavedGstin(data.gst || '');
       setSavedCurrency(data.currency_code || '');
-      setForm({
+      const loaded: CompanyProfileUpdate = {
         name: data.name || '',
         address: data.address || '',
         gst: data.gst || '',
@@ -810,7 +819,9 @@ export default function CompanyPage() {
         eway_always_show_button: data.eway_always_show_button ?? true,
         show_pay_qr_on_invoice: data.show_pay_qr_on_invoice || false,
         show_upi_pay_button: data.show_upi_pay_button || false,
-      });
+      };
+      setForm(loaded);
+      setSavedForm(loaded);
       setAdditionalInfo(data.additional_company_info || '');
       if (data.logo_data && data.logo_mime_type) {
         setLogoUrl(`data:${data.logo_mime_type};base64,${data.logo_data}`);
@@ -926,7 +937,11 @@ export default function CompanyPage() {
       }
       setGstError('');
       await loadCompanyProfile();
+      const next = pendingNavRef.current;
+      pendingNavRef.current = null;
+      if (next) navigate(next);
     } catch (err) {
+      pendingNavRef.current = null;
       const { message, fieldErrors } = await getApiErrorDetails(err, 'Unable to save company profile');
       setError(message);
       const gstFieldError = fieldErrors.find((fieldError) => fieldError.field === 'gst');
@@ -954,6 +969,8 @@ export default function CompanyPage() {
       setAdditionalSaving(false);
     }
   }
+
+  const formDirty = isCompanyFormDirty(savedForm, form);
 
   function handleCreateFirstInvoice() {
     setShowFirstSetupPrompt(false);
@@ -993,6 +1010,22 @@ export default function CompanyPage() {
 
       <StatusToasts error={error} success={success} onClearError={() => setError('')} onClearSuccess={() => setSuccess('')} />
 
+      {leaveTarget ? (
+        <ConfirmDialog
+          title="Save your changes?"
+          message="You have changed your company details. Save them before opening Cash & Bank Accounts, or stay here and keep editing."
+          confirmText="Save and open"
+          cancelText="Stay here"
+          confirmDisabled={submitting}
+          onCancel={() => setLeaveTarget(null)}
+          onConfirm={() => {
+            pendingNavRef.current = leaveTarget;
+            setLeaveTarget(null);
+            formRef.current?.requestSubmit();
+          }}
+        />
+      ) : null}
+
       {showCurrencyWarning ? (
         <CurrencyChangeDialog
           fromCurrency={savedCurrency}
@@ -1000,6 +1033,7 @@ export default function CompanyPage() {
           confirmDisabled={submitting}
           onCancel={() => {
             setShowCurrencyWarning(false);
+            pendingNavRef.current = null;
             setForm((current) => ({ ...current, currency_code: savedCurrency }));
           }}
           onConfirm={async () => {
@@ -1100,7 +1134,7 @@ export default function CompanyPage() {
           {loading ? <div className="empty-state">Loading company profile...</div> : null}
 
           {!loading ? (
-            <form className="stack" onSubmit={handleSubmit}>
+            <form ref={formRef} className="stack" onSubmit={handleSubmit}>
               <small className="field-hint">Fields marked <span style={{ color: 'var(--color-danger)' }}>*</span> are required.</small>
               <div className="field-grid">
                 <div className="field">
@@ -1324,29 +1358,41 @@ export default function CompanyPage() {
                     </small>
                   ) : (
                   <>
+                  {/* A text link, not a button: as a button beside Save it drew the
+                      click meant for Save, and leaving dropped the edits. */}
                   <small className="field-hint">
-                    Bank and cash account details are managed from Cash &amp; Bank Accounts.
-                  </small>
-                  <div className="button-row" style={{ marginTop: '8px' }}>
-                    <button
-                      type="button"
-                      className="button button--secondary"
-                      onClick={() => navigate('/cash-bank/accounts')}
-                      title="Open Cash & Bank Accounts"
-                      aria-label="Open Cash & Bank Accounts"
+                    Your bank accounts, cash accounts and UPI ID are kept in{' '}
+                    <Link
+                      to={CASH_BANK_PATH}
+                      className="link-button"
+                      onClick={(event) => {
+                        if (!formDirty) return;
+                        event.preventDefault();
+                        setLeaveTarget(CASH_BANK_PATH);
+                      }}
                     >
-                      Manage cash &amp; bank accounts
-                    </button>
-                  </div>
+                      Cash &amp; Bank Accounts &rarr;
+                    </Link>
+                  </small>
                   </>
                   )}
                 </div>
               </div>
 
-              <div className="button-row">
-                <button className="button button--primary" disabled={submitting} title="Save company details" aria-label="Save company details">
+              <div className={`form-save-bar${formDirty ? ' form-save-bar--dirty' : ''}`}>
+                <button
+                  className="button button--primary"
+                  disabled={submitting || (!noCompany && !formDirty)}
+                  title="Save company details"
+                  aria-label="Save company details"
+                >
                   {submitting ? 'Saving company...' : 'Save company details'}
                 </button>
+                {!noCompany && (
+                  <span className="form-save-bar__status" role="status">
+                    {formDirty ? 'You have unsaved changes' : 'All changes saved'}
+                  </span>
+                )}
               </div>
             </form>
           ) : null}

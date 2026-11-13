@@ -72,7 +72,8 @@ test.describe('Company Profile', () => {
     await page.click('button:has-text("Save company details")');
     await expectSuccess(page, 'Company profile saved');
 
-    await page.click('button:has-text("Manage cash & bank accounts")');
+    // Saved, so the link goes straight there without asking.
+    await page.getByRole('link', { name: 'Cash & Bank Accounts →' }).click();
     await expect(page).toHaveURL('/cash-bank/accounts');
     await expect(page.locator('#new-account-display')).toBeVisible({ timeout: 5_000 });
 

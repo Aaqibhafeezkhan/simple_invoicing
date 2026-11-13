@@ -8914,3 +8914,35 @@ a.ledger-chip:focus-visible {
     bottom: auto;
   }
 }
+
+/* The company form's save row. While there are unsaved edits it sticks to the
+   bottom of the screen, so Save stays in reach on a long form and is plainly the
+   thing to press. */
+.form-save-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.form-save-bar__status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.form-save-bar--dirty {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgb(var(--rgb-panel-sticky) / 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.form-save-bar--dirty .form-save-bar__status {
+  color: var(--text);
+  font-weight: 600;
+}

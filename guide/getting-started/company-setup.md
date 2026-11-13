@@ -38,7 +38,7 @@ This text appears below the logo on all PDFs. Use it for taglines, registration 
 
 ## Bank details
 
-Bank details live with your accounts, not on this page. Go to **Sales → Cash & Bank → Manage Account**, or click **Manage cash & bank accounts** here. Only accounts with **Display on invoice PDF** ticked appear on invoices. See [Cash and bank](../sales/cash-bank#bank-and-cash-accounts).
+Bank details live with your accounts, not on this page. Go to **Sales → Cash & Bank → Manage Account**, or click the **Cash & Bank Accounts** link under the company details. If you have unsaved changes, the app offers to save them first. Only accounts with **Display on invoice PDF** ticked appear on invoices. See [Cash and bank](../sales/cash-bank#bank-and-cash-accounts).
 
 If no account is displayed, the invoice preview tells you that customers cannot see where to pay. That note does not appear on the PDF.
 

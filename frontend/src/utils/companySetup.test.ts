@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import type { CompanyProfile } from '../types/api';
-import { clearSetupDraft, isCompanyConfigured, isCompanySetupRequired, readSetupDraft, writeSetupDraft } from './companySetup';
+import { clearSetupDraft, isCompanyConfigured, isCompanyFormDirty, isCompanySetupRequired, readSetupDraft, writeSetupDraft } from './companySetup';
 
 describe('isCompanySetupRequired', () => {
   const conflict = Object.assign(new Error('x'), {
@@ -96,5 +96,21 @@ describe('company setup draft', () => {
     expect(readSetupDraft('a@example.com', broken)).toBeNull();
     expect(() => writeSetupDraft('a@example.com', { name: 'X' }, broken)).not.toThrow();
     expect(() => clearSetupDraft('a@example.com', broken)).not.toThrow();
+  });
+});
+
+describe('isCompanyFormDirty', () => {
+  const saved = { name: 'Sharma Electricals', address: 'Pune', show_sku_on_pdf: false };
+  it('is clean when nothing changed', () => {
+    expect(isCompanyFormDirty(saved, { ...saved })).toBe(false);
+  });
+  it('sees a typed change', () => {
+    expect(isCompanyFormDirty(saved, { ...saved, address: 'Pune 411030' })).toBe(true);
+  });
+  it('sees a ticked box', () => {
+    expect(isCompanyFormDirty(saved, { ...saved, show_sku_on_pdf: true })).toBe(true);
+  });
+  it('is clean before the profile has loaded', () => {
+    expect(isCompanyFormDirty(null, saved)).toBe(false);
   });
 });
